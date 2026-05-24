@@ -1,0 +1,15 @@
+{
+  "easting": 664479.5,
+  "northing": 7195351.0,
+  "elevation_base": 1012.02001953125,
+  "crs_hint": "presumido UTM (E57 native coords)",
+  "bounds_original": {
+    "x_min": 664307.875,
+    "x_max": 664651.0625,
+    "y_min": 7195170.0,
+    "y_max": 7195532.0,
+    "z_min": 1012.02001953125,
+    "z_max": 1079.8243408203125
+  },
+  "point_count": 5000000
+}

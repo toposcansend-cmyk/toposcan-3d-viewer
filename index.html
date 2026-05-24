@@ -1039,6 +1039,16 @@
           <span class="info"><span class="title">Torre + Terreno (demo)</span><span class="sub">Com nuvem sintética</span></span>
         </button>
 
+        <div class="project-group-label">SIMEPAR · Levantamento Topográfico REAL</div>
+        <button class="project-item" data-scene="simepar_real" onclick="loadScene('simepar_real')">
+          <span class="icon">🛰️</span>
+          <span class="info"><span class="title">Site SIMEPAR (real)</span><span class="sub">5M pontos reais · UTM 664479/7195351 · 76 MB</span></span>
+        </button>
+        <button class="project-item" data-scene="simepar_cloud" onclick="loadScene('simepar_cloud')">
+          <span class="icon">☁️</span>
+          <span class="info"><span class="title">Nuvem pontos (sem torre)</span><span class="sub">Terreno 343×362m · variação 67m altura</span></span>
+        </button>
+
         <div class="project-group-label">Toposcan · Aerolevantamentos 3D</div>
         <button class="project-item" data-scene="rosario" onclick="loadScene('rosario')">
           <span class="icon">⛪</span>
@@ -1375,7 +1385,17 @@
     cena: {
       src: "models/demo/cena_torre_terreno.glb?v=20260524-amarok",
       orbit: "30deg 75deg auto", target: "0m 12m 0m",
-      icon: "🌍", name: "Torre + Terreno",
+      icon: "🌍", name: "Torre + Terreno (demo)",
+    },
+    simepar_real: {
+      src: "models/simepar/simepar_torre_real.glb?v=20260524-real",
+      orbit: "45deg 70deg 220m", target: "0m 50m 0m",
+      icon: "🛰️", name: "Site SIMEPAR (real)",
+    },
+    simepar_cloud: {
+      src: "models/simepar/simepar_site.glb?v=20260524-real",
+      orbit: "45deg 70deg 220m", target: "0m 30m 0m",
+      icon: "☁️", name: "Nuvem de pontos (sem torre)",
     },
     rosario: {
       src: "models/igrejas/igreja_rosario.glb",
