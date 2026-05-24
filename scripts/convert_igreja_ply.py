@@ -20,7 +20,7 @@ os.makedirs(MODELS, exist_ok=True)
 # Conversao Z-up -> Y-up
 ROT_YUP = rotation_matrix(-np.pi/2, [1, 0, 0])
 
-def convert(ply_path, out_name, texture_path=None, max_faces=500_000):
+def convert(ply_path, out_name, texture_path=None, max_faces=2_000_000):
     print(f"\n{'='*70}\nProcessando: {ply_path}")
     print(f"  Tamanho: {os.path.getsize(ply_path)/1024/1024:.1f} MB")
 
