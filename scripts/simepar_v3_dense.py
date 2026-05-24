@@ -26,14 +26,13 @@ os.makedirs(OUT_DIR, exist_ok=True)
 
 TARGET_POINTS = 58_000_000  # USAR TODOS os pontos do E57 (max densidade no crop)
 
-# Crop bbox - centrado no SITE SIMEPAR (radome + torre nova proxima)
-CROP_X_HALF = 45.0   # +-45m leste-oeste (90m total)
-CROP_Z_HALF = 30.0   # +-30m norte-sul (60m total)
-# Centro do crop: meio caminho radome -> torre (offset_east/2, offset_north/2)
+# Crop bbox - REDUZIDO para mobile (60x40m focado)
+CROP_X_HALF = 30.0   # +-30m leste-oeste (60m total)
+CROP_Z_HALF = 22.0   # +-22m norte-sul (44m total)
 CROP_CENTER_OFFSET_X = 6.0   # entre radome e torre nova
-CROP_CENTER_OFFSET_Z = +4.0  # ligeiramente sul do radome
+CROP_CENTER_OFFSET_Z = +3.0  # ligeiramente sul
 # Densidade alvo apos crop (subsample apos crop se necessario)
-MAX_POINTS_AFTER_CROP = 6_500_000   # ~100 MB final
+MAX_POINTS_AFTER_CROP = 2_500_000   # ~38 MB final (mobile-friendly)
 
 # ============================================================================
 print(f"[1/6] E57 ({os.path.getsize(E57)/1024**3:.2f} GB)")
