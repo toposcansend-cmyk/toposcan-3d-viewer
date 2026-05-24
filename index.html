@@ -983,10 +983,11 @@
       exposure="1.05"
       camera-controls
       touch-action="pan-y"
-      camera-orbit="45deg 65deg 50m"
-      min-camera-orbit="auto auto 5m"
-      max-camera-orbit="auto auto 300m"
-      field-of-view="35deg"
+      camera-orbit="30deg 75deg auto"
+      camera-target="0m 12m 0m"
+      min-camera-orbit="auto auto 8m"
+      max-camera-orbit="auto auto 200m"
+      field-of-view="auto"
       environment-image="neutral"
       interaction-prompt="none"
       style="background-color: transparent;">
@@ -1224,18 +1225,20 @@
   let autoRotate = false;
   let currentScene = 'torre';
 
+  // Camera-orbit em Y-up: theta=rotacao Y, phi=0(topo)..90(lado)..180(baixo), radius=auto
+  // Modelo: Y=altura(0..30m), X=leste(-17..+9), Z=norte(-7..+7), centro em (-4, 12, 0)
   const scenes = {
-    torre: { src: "models/torre_radar_v3.glb", orbit: "45deg 65deg 50m" },
-    cena:  { src: "models/demo/cena_torre_terreno.glb", orbit: "45deg 65deg 70m" },
+    torre: { src: "models/torre_radar_v3.glb",       orbit: "30deg 75deg auto", target: "0m 12m 0m" },
+    cena:  { src: "models/demo/cena_torre_terreno.glb", orbit: "30deg 75deg auto", target: "0m 12m 0m" },
   };
 
   const views = {
-    perspectiva: "45deg 65deg 45m",
-    frontal:     "0deg 88deg 45m",
-    lateral:     "90deg 88deg 45m",
-    topo:        "0deg 1deg 70m",
-    "close-topo": "30deg 70deg 12m",
-    "close-base": "20deg 80deg 14m",
+    perspectiva: { orbit: "30deg 75deg auto",  target: "0m 12m 0m" },
+    frontal:     { orbit: "0deg 88deg auto",   target: "0m 12m 0m" },
+    lateral:     { orbit: "90deg 88deg auto",  target: "0m 12m 0m" },
+    topo:        { orbit: "0deg 1deg auto",    target: "0m 12m 0m" },
+    "close-topo":{ orbit: "20deg 70deg 14m",   target: "0m 24m 0m" },
+    "close-base":{ orbit: "30deg 85deg 12m",   target: "0m 2m 0m"  },
   };
 
   /* ════════════════════════════════════════════════════════════
@@ -1284,21 +1287,15 @@
      ════════════════════════════════════════════════════════════ */
   function adjustCameraForViewport() {
     const isMobilePortrait = window.innerWidth <= 980 && window.innerHeight > window.innerWidth;
-    if (isMobilePortrait) {
-      // theta=15° (quase frontal), phi=82° (quase horizontal), radius=65m
-      // Isso enquadra a torre vertical inteira em portrait
-      const mobileOrbit = "15deg 82deg 65m";
-      if (currentScene === 'torre') {
-        scenes.torre.orbit = mobileOrbit;
+    // Y-up agora: cameraOrbit="auto" enquadra a torre automaticamente
+    // So precisamos garantir o target correto e ajustar FOV pra portrait
+    try {
+      if (isMobilePortrait) {
+        mv.fieldOfView = '45deg';
       } else {
-        scenes.cena.orbit = "15deg 82deg 85m";
+        mv.fieldOfView = 'auto';
       }
-      // Aplicar agora se acabou de carregar
-      try {
-        mv.cameraOrbit = scenes[currentScene].orbit;
-        mv.fieldOfView = '45deg';  // FOV maior em portrait melhora composição
-      } catch(e) {}
-    }
+    } catch(e) {}
   }
   // Ajustar no load e em mudanças de orientação
   window.addEventListener('load', adjustCameraForViewport);
@@ -1319,7 +1316,10 @@
     loader.classList.remove('hidden');
     loaderProgress.textContent = '0%';
     mv.src = s.src;
-    setTimeout(() => { mv.cameraOrbit = s.orbit; }, 100);
+    setTimeout(() => {
+      mv.cameraOrbit = s.orbit;
+      mv.cameraTarget = s.target;
+    }, 100);
     document.getElementById('btn-torre').classList.toggle('active', key === 'torre');
     document.getElementById('btn-cena').classList.toggle('active', key === 'cena');
     showToast(key === 'torre' ? '🗼 Torre carregada' : '🌍 Cena completa carregada');
@@ -1329,20 +1329,20 @@
      VIEWS
      ════════════════════════════════════════════════════════════ */
   function setView(btn, name) {
-    if (!views[name]) return;
+    const v = views[name];
+    if (!v) return;
     if (btn) {
       document.querySelectorAll('.views-panel button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     }
-    mv.cameraOrbit = views[name];
-    if (name === 'close-topo')      mv.cameraTarget = '0m 0m 24m';
-    else if (name === 'close-base') mv.cameraTarget = '0m 0m 1m';
-    else                            mv.cameraTarget = 'auto auto auto';
+    mv.cameraOrbit = v.orbit;
+    mv.cameraTarget = v.target;
   }
 
   function resetCamera() {
-    mv.cameraOrbit = scenes[currentScene].orbit;
-    mv.cameraTarget = 'auto auto auto';
+    const s = scenes[currentScene];
+    mv.cameraOrbit = s.orbit;
+    mv.cameraTarget = s.target;
     document.querySelectorAll('.views-panel button').forEach(b => b.classList.remove('active'));
     const persp = document.querySelector('[data-view="perspectiva"]');
     if (persp) persp.classList.add('active');
@@ -1464,6 +1464,8 @@
       case '2': setView(document.querySelector('[data-view="frontal"]'), 'frontal'); break;
       case '3': setView(document.querySelector('[data-view="lateral"]'), 'lateral'); break;
       case '4': setView(document.querySelector('[data-view="topo"]'), 'topo'); break;
+      case '5': setView(document.querySelector('[data-view="close-topo"]'), 'close-topo'); break;
+      case '6': setView(document.querySelector('[data-view="close-base"]'), 'close-base'); break;
     }
   });
 
