@@ -762,15 +762,139 @@
   }
 
   /* Mobile */
+  /* ════════════════════════════════════════════════════════════
+     MOBILE — viewer fullscreen + bottom sheet
+     ════════════════════════════════════════════════════════════ */
   @media (max-width: 980px) {
-    main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
-    aside { max-height: 280px; }
-    header { grid-template-columns: 1fr; gap: 12px; padding: 12px 16px; }
-    .header-left, .header-right { justify-content: center; }
-    .logo-wordmark { height: 38px; }
-    .header-subtitle { font-size: 10px; letter-spacing: 1.5px; }
-    .header-subtitle .sep { margin: 0 5px; }
-    .views-panel { max-width: calc(100% - 36px); }
+    body { grid-template-rows: auto 1fr; }
+
+    /* Header bem compacto */
+    header {
+      grid-template-columns: auto 1fr auto;
+      grid-template-rows: auto;
+      gap: 10px;
+      padding: 8px 12px;
+    }
+    .header-left, .header-right { justify-content: center; gap: 4px; }
+    .header-left .icon-btn:nth-child(3) { display: none; }  /* esconde "sobre" no header */
+    .logo-wordmark { height: 30px; }
+    .header-subtitle { display: none; }  /* esconde subtitle pra economizar espaço */
+    .scene-switch { padding: 3px; }
+    .scene-switch button { padding: 6px 10px; font-size: 10px; }
+    .icon-btn { width: 32px; height: 32px; font-size: 14px; }
+
+    /* Main: viewer ocupa toda altura restante */
+    main { grid-template-columns: 1fr; grid-template-rows: 1fr; position: relative; }
+
+    /* Sidebar vira bottom sheet (drawer) */
+    aside {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      max-height: 75vh;
+      height: 60vh;
+      transform: translateY(calc(100% - 56px));  /* só o handle visível */
+      transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 20;
+      border-radius: 16px 16px 0 0;
+      border-top: 1px solid var(--border);
+      border-left: none;
+      box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
+    }
+    aside.open { transform: translateY(0); }
+    aside::before {
+      content: "";
+      position: absolute;
+      top: 8px; left: 50%;
+      transform: translateX(-50%);
+      width: 44px; height: 4px;
+      background: var(--text-soft);
+      border-radius: 2px;
+      opacity: 0.6;
+    }
+    /* Botão "puxar pra cima" sobre a aba */
+    .tabs {
+      cursor: pointer;
+      padding-top: 14px;
+    }
+
+    /* Footer escondido no mobile */
+    footer { display: none; }
+
+    /* Floating panels — reposicionados para mobile */
+    .views-panel {
+      top: auto;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: calc(100% - 24px);
+      justify-content: center;
+      padding: 6px;
+    }
+    .views-panel button {
+      padding: 6px 10px;
+      font-size: 11px;
+    }
+
+    .tools-panel {
+      top: 10px;
+      right: 10px;
+      flex-direction: row;
+      padding: 4px;
+    }
+    .tools-panel .icon-btn { width: 34px; height: 34px; }
+
+    .scale-bar { display: none; }  /* economiza espaço */
+    .compass { width: 56px; height: 56px; padding: 6px; bottom: 70px; right: 12px; }
+
+    /* Onboarding tips menores */
+    .onboarding-tip { max-width: 280px; }
+
+    /* Footer info bar (substitui floating panels num botão único) */
+    .mobile-bottom-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(15,29,40,0.95);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--border);
+      padding: 10px 14px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 15;
+      height: 56px;
+    }
+    .mobile-bottom-bar button {
+      flex: 1;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: inherit;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .mobile-bottom-bar button .icon { font-size: 16px; }
+    .mobile-bottom-bar button:active { background: var(--accent); }
+  }
+
+  /* Hide mobile bar on desktop */
+  .mobile-bottom-bar { display: none; }
+  @media (max-width: 980px) {
+    .mobile-bottom-bar { display: flex; }
+  }
+
+  /* Portrait specific tweaks */
+  @media (max-width: 600px) and (orientation: portrait) {
+    .scene-switch button { padding: 5px 8px; font-size: 9.5px; }
+    .scene-switch button .emoji { display: none; }  /* economiza */
+    header { padding: 6px 8px; }
   }
 </style>
 </head>
@@ -1024,6 +1148,15 @@
   </aside>
 </main>
 
+<!-- ════════ MOBILE BOTTOM BAR ════════ -->
+<nav class="mobile-bottom-bar" id="mobile-bar">
+  <button onclick="toggleDrawer()" id="btn-drawer"><span class="icon">📊</span><span>Info</span></button>
+  <button onclick="resetCamera()"><span class="icon">↺</span><span>Reset</span></button>
+  <button onclick="toggleAutoRotate()" id="btn-rotate-m"><span class="icon">🔄</span><span>Girar</span></button>
+  <button onclick="screenshot()"><span class="icon">📷</span><span>Foto</span></button>
+  <button onclick="loadScene(currentScene === 'torre' ? 'cena' : 'torre')"><span class="icon">🌍</span><span>Cena</span></button>
+</nav>
+
 <!-- ════════ FOOTER ════════ -->
 <footer>
   <span>PDF: 01-ARQUITETONICO TORRE RADAR-BANDA C · SIMEPAR · JUN/2025</span>
@@ -1118,6 +1251,59 @@
   function showModal(id) { document.getElementById(id).classList.add('show'); }
   function closeModal(id) { document.getElementById(id).classList.remove('show'); }
   function showAbout() { showModal('modal-about'); }
+
+  /* ════════════════════════════════════════════════════════════
+     MOBILE DRAWER (bottom sheet)
+     ════════════════════════════════════════════════════════════ */
+  function toggleDrawer() {
+    const aside = document.querySelector('aside');
+    aside.classList.toggle('open');
+    const btn = document.getElementById('btn-drawer');
+    if (btn) {
+      const open = aside.classList.contains('open');
+      btn.querySelector('.icon').textContent = open ? '✕' : '📊';
+      btn.querySelector('span:last-child').textContent = open ? 'Fechar' : 'Info';
+    }
+  }
+  // Tap nas tabs também abre o drawer (UX)
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabs = document.querySelector('.tabs');
+    if (tabs) {
+      tabs.addEventListener('click', (e) => {
+        if (window.innerWidth <= 980) {
+          const aside = document.querySelector('aside');
+          if (!aside.classList.contains('open')) toggleDrawer();
+        }
+      }, true);
+    }
+  });
+
+  /* ════════════════════════════════════════════════════════════
+     CAMERA DEFAULT PARA MOBILE PORTRAIT
+     (torre é alta — câmera precisa de phi maior pra ver de pé)
+     ════════════════════════════════════════════════════════════ */
+  function adjustCameraForViewport() {
+    const isMobilePortrait = window.innerWidth <= 980 && window.innerHeight > window.innerWidth;
+    if (isMobilePortrait) {
+      // theta=15° (quase frontal), phi=82° (quase horizontal), radius=65m
+      // Isso enquadra a torre vertical inteira em portrait
+      const mobileOrbit = "15deg 82deg 65m";
+      if (currentScene === 'torre') {
+        scenes.torre.orbit = mobileOrbit;
+      } else {
+        scenes.cena.orbit = "15deg 82deg 85m";
+      }
+      // Aplicar agora se acabou de carregar
+      try {
+        mv.cameraOrbit = scenes[currentScene].orbit;
+        mv.fieldOfView = '45deg';  // FOV maior em portrait melhora composição
+      } catch(e) {}
+    }
+  }
+  // Ajustar no load e em mudanças de orientação
+  window.addEventListener('load', adjustCameraForViewport);
+  window.addEventListener('orientationchange', () => setTimeout(adjustCameraForViewport, 300));
+  window.addEventListener('resize', adjustCameraForViewport);
 
   // Close modal on backdrop click
   document.querySelectorAll('.modal').forEach(m => {
