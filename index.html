@@ -1126,17 +1126,19 @@
     <model-viewer id="mv"
       src="models/torre_radar_v3.glb"
       alt="Torre Radar Banda C - SIMEPAR"
-      shadow-intensity="1.4"
-      shadow-softness="0.8"
-      exposure="1.05"
+      shadow-intensity="2.0"
+      shadow-softness="1.0"
+      exposure="1.15"
+      tone-mapping="aces"
       camera-controls
       touch-action="pan-y"
       camera-orbit="30deg 75deg auto"
       camera-target="0m 12m 0m"
-      min-camera-orbit="auto auto 8m"
-      max-camera-orbit="auto auto 200m"
+      min-camera-orbit="auto auto 5m"
+      max-camera-orbit="auto auto 500m"
       field-of-view="auto"
-      environment-image="neutral"
+      environment-image="https://modelviewer.dev/shared-assets/environments/spruit_sunrise_1k_HDR.hdr"
+      skybox-image=""
       interaction-prompt="none"
       style="background-color: transparent;">
     </model-viewer>
@@ -1378,12 +1380,12 @@
   // Camera-orbit em Y-up: theta=rotacao Y, phi=0(topo)..90(lado)..180(baixo), radius=auto
   const scenes = {
     torre: {
-      src: "models/torre_radar_v3.glb?v=20260524-amarok",
+      src: "models/torre_radar_v3.glb?v=20260524-pbr",
       orbit: "30deg 75deg auto", target: "0m 12m 0m",
       icon: "🗼", name: "Torre Radar Banda C",
     },
     cena: {
-      src: "models/demo/cena_torre_terreno.glb?v=20260524-amarok",
+      src: "models/demo/cena_torre_terreno.glb?v=20260524-pbr",
       orbit: "30deg 75deg auto", target: "0m 12m 0m",
       icon: "🌍", name: "Torre + Terreno (demo)",
     },
