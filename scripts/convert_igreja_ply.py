@@ -46,6 +46,23 @@ def convert(ply_path, out_name, texture_path=None, max_faces=300_000):
     b = mesh.bounds
     print(f"  Bounds (Y-up, centralizado): X={b[1][0]-b[0][0]:.1f}m Y={b[1][1]-b[0][1]:.1f}m Z={b[1][2]-b[0][2]:.1f}m")
 
+    # Capturar UVs e cores ANTES da decimacao (sera mapeado por nearest-neighbor)
+    original_uvs = None
+    original_colors = None
+    if has_uv:
+        try:
+            original_uvs = np.asarray(mesh.visual.uv, dtype=np.float32).copy()
+            print(f"    UVs capturados: shape={original_uvs.shape}")
+        except Exception as e:
+            print(f"    aviso UV capture: {e}")
+    if has_vcolor:
+        try:
+            original_colors = np.asarray(mesh.visual.vertex_colors, dtype=np.uint8).copy()
+            print(f"    Cores capturadas: shape={original_colors.shape}")
+        except Exception as e:
+            print(f"    aviso color capture: {e}")
+    original_vertices = mesh.vertices.copy()
+
     # Decima usando fast_simplification direto
     if len(mesh.faces) > max_faces:
         target_reduction = 1.0 - (max_faces / len(mesh.faces))
@@ -55,39 +72,56 @@ def convert(ply_path, out_name, texture_path=None, max_faces=300_000):
             verts = np.asarray(mesh.vertices, dtype=np.float32)
             faces = np.asarray(mesh.faces, dtype=np.uint32)
             new_v, new_f = fast_simplification.simplify(verts, faces, target_reduction=target_reduction)
-            # Preservar cores de vertice por nearest-neighbor
-            preserve_colors = None
-            try:
-                if hasattr(mesh.visual, 'vertex_colors') and mesh.visual.vertex_colors is not None:
-                    from scipy.spatial import cKDTree
-                    tree = cKDTree(mesh.vertices)
-                    _, idx = tree.query(new_v, k=1)
-                    preserve_colors = mesh.visual.vertex_colors[idx]
-            except Exception as ce:
-                print(f"    aviso: nao consegui preservar cores: {ce}")
+
+            # Mapear UV/cores por nearest-neighbor para os novos vertices
+            new_uvs = None
+            new_colors = None
+            if original_uvs is not None or original_colors is not None:
+                from scipy.spatial import cKDTree
+                tree = cKDTree(original_vertices)
+                _, idx = tree.query(new_v, k=1)
+                if original_uvs is not None and len(original_uvs) == len(original_vertices):
+                    new_uvs = original_uvs[idx]
+                if original_colors is not None and len(original_colors) == len(original_vertices):
+                    new_colors = original_colors[idx]
+
+            # Reconstruir mesh
             mesh = trimesh.Trimesh(vertices=new_v, faces=new_f, process=False)
-            if preserve_colors is not None:
-                mesh.visual.vertex_colors = preserve_colors
+            if new_colors is not None:
+                mesh.visual.vertex_colors = new_colors
+                print(f"    Cores remapeadas: {new_colors.shape}")
+            if new_uvs is not None:
+                # Marca o mesh para receber TextureVisuals depois
+                mesh._pending_uv = new_uvs
+                print(f"    UVs remapeados: {new_uvs.shape}")
             print(f"  Apos decimacao: {len(mesh.vertices):,} v / {len(mesh.faces):,} f")
         except Exception as e:
             print(f"  Decimacao falhou: {e}")
             import traceback; traceback.print_exc()
 
     # Anexar textura se foi passada
-    if texture_path and os.path.exists(texture_path) and has_uv:
-        from PIL import Image
-        try:
-            tex = Image.open(texture_path)
-            # Reduzir textura se muito grande (web)
-            max_tex = 2048
-            if tex.width > max_tex or tex.height > max_tex:
-                tex.thumbnail((max_tex, max_tex), Image.LANCZOS)
-                print(f"  Textura reduzida para {tex.size}")
-            mat = trimesh.visual.texture.SimpleMaterial(image=tex)
-            mesh.visual = trimesh.visual.TextureVisuals(uv=mesh.visual.uv, material=mat)
-            print(f"  Textura aplicada: {texture_path}")
-        except Exception as e:
-            print(f"  Erro aplicando textura: {e}")
+    if texture_path and os.path.exists(texture_path):
+        # Pega UV do pending_uv (apos decimacao) ou do visual original
+        uv_to_use = getattr(mesh, '_pending_uv', None)
+        if uv_to_use is None and hasattr(mesh.visual, 'uv') and mesh.visual.uv is not None:
+            uv_to_use = mesh.visual.uv
+        if uv_to_use is None:
+            print(f"  Sem UV disponivel - pulando textura")
+        else:
+            from PIL import Image
+            try:
+                tex = Image.open(texture_path)
+                # Reduzir textura se muito grande (web)
+                max_tex = 2048
+                if tex.width > max_tex or tex.height > max_tex:
+                    tex.thumbnail((max_tex, max_tex), Image.LANCZOS)
+                    print(f"  Textura reduzida para {tex.size}")
+                mat = trimesh.visual.material.SimpleMaterial(image=tex)
+                mesh.visual = trimesh.visual.TextureVisuals(uv=uv_to_use, material=mat)
+                print(f"  Textura aplicada: {os.path.basename(texture_path)} ({tex.size})")
+            except Exception as e:
+                print(f"  Erro aplicando textura: {e}")
+                import traceback; traceback.print_exc()
 
     # Exportar como GLB (trimesh decide se usa Draco)
     out_glb = os.path.join(MODELS, out_name + ".glb")

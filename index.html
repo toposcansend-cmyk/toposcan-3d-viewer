@@ -1048,9 +1048,9 @@
           <span class="icon">⛪</span>
           <span class="info"><span class="title">Igreja São José</span><span class="sub">Em conversão...</span></span>
         </button>
-        <button class="project-item disabled" disabled>
+        <button class="project-item" data-scene="santarita" onclick="loadScene('santarita')">
           <span class="icon">⛪</span>
-          <span class="info"><span class="title">Igreja Santa Rita</span><span class="sub">Em conversão...</span></span>
+          <span class="info"><span class="title">Igreja Santa Rita</span><span class="sub">Mesh aéreo · textura UV · 8 MB</span></span>
         </button>
         <button class="project-item disabled" disabled>
           <span class="icon">⛪</span>
@@ -1381,6 +1381,11 @@
       src: "models/igrejas/igreja_rosario.glb",
       orbit: "30deg 75deg auto", target: "auto auto auto",
       icon: "⛪", name: "Igreja N. Sra. do Rosário",
+    },
+    santarita: {
+      src: "models/igrejas/igreja_santa_rita.glb",
+      orbit: "30deg 75deg auto", target: "auto auto auto",
+      icon: "⛪", name: "Igreja Santa Rita",
     },
   };
 
