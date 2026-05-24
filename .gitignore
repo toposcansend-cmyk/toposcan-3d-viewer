@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Build / temp
+*.log
+.cache/
+dist/
+build/
+
+# Large point clouds (host externally)
+*.las.gz
+*.laz
+*.e57
+
+# Intermediate files
+_attachments_b64.json
+*.b64
+_b64_*.txt
+
+# Local server logs
+http_server.log
