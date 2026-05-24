@@ -124,7 +124,13 @@ C = {
     "transformador": [80, 80, 85, 255],
     "bateria":       [35, 35, 42, 255],
     "ar_cond":       [240, 240, 240, 255],
-    "carro":         [175, 45, 45, 255],
+    "carro":         [175, 45, 45, 255],   # legacy
+    "car_white":     [245, 246, 248, 255], # branco perola
+    "car_window":    [18, 28, 42, 220],    # vidro azul-preto
+    "bumper":        [40, 42, 46, 255],    # cinza chumbo
+    "car_farol":     [255, 220, 130, 255], # ambar
+    "wheel_tire":    [25, 25, 28, 255],    # preto pneu
+    "wheel_rim":     [165, 168, 175, 255], # cinza prata rim
     "mureta":        [210, 205, 188, 255],
     "gradil":        [88, 92, 100, 255],
     "tampa_fossa":   [125, 110, 95, 255],
@@ -612,19 +618,129 @@ def build_fossa():
                  color=C["concreto"], name="sumidouro_corpo"))
     return M
 
+def _textured_panel_xz(center, width_x, height_z, texture_path, name=None):
+    """Cria retangulo no plano XZ (normal Y) com textura aplicada."""
+    cx, cy, cz = center
+    wx, hz = width_x/2, height_z/2
+    verts = np.array([
+        [cx - wx, cy, cz - hz],
+        [cx + wx, cy, cz - hz],
+        [cx + wx, cy, cz + hz],
+        [cx - wx, cy, cz + hz],
+    ], dtype=np.float32)
+    uvs = np.array([[0, 0], [1, 0], [1, 1], [0, 1]], dtype=np.float32)
+    faces = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int64)
+    mesh = trimesh.Trimesh(vertices=verts, faces=faces, process=False)
+    if texture_path and os.path.exists(texture_path):
+        from PIL import Image
+        tex = Image.open(texture_path).convert('RGB')
+        mat = trimesh.visual.material.SimpleMaterial(image=tex)
+        mesh.visual = trimesh.visual.TextureVisuals(uv=uvs, material=mat)
+    if name: mesh.metadata['name'] = name
+    return mesh
+
 def build_carro_referencia():
-    """Carro pra escala (estacionado sul do predio)."""
+    """Pickup VW Amarok branca com logo SIMEPAR (estacionada sul do predio)."""
     M = []
     car_x = BUILDING_X + 3.0
     car_y = -BUILDING_NS/2 - 3.0
-    M.append(box((4.50, 1.80, 1.20),
-                 center=(car_x, car_y, 0.60), color=C["carro"], name="carro_corpo"))
-    M.append(box((2.80, 1.70, 0.50),
-                 center=(car_x-0.2, car_y, 1.40), color=C["carro"], name="carro_teto"))
-    for (rx,ry) in [(1.50,0.85),(1.50,-0.85),(-1.50,0.85),(-1.50,-0.85)]:
-        M.append(cyl(0.32, 0.20,
-                     center=(car_x+rx, car_y+ry, 0.32), axis=(0,1,0), sections=20,
-                     color=C["bateria"], name=f"carro_roda_{rx}_{ry}"))
+
+    # Dimensoes Amarok (aprox): 5.25 x 1.95 x 1.85m, rodas R17 (~0.78m diam)
+    L, W, H_BODY = 5.25, 1.95, 1.05  # body inferior
+    CAB_L, CAB_H = 2.55, 0.80         # cab elevada
+    GROUND = 0.32                     # altura do chassis acima do solo
+    BUMPER_H = 0.20
+
+    # ---------- BODY (full length, lower half) - branco ----------
+    M.append(box((L, W, H_BODY),
+                 center=(car_x, car_y, GROUND + H_BODY/2),
+                 color=C["car_white"], name="carro_body"))
+
+    # ---------- CAB (front portion, raised) - branco ----------
+    cab_offset_x = -(L/2 - CAB_L/2) + 0.40   # centro da cab um pouco a frente
+    M.append(box((CAB_L, W - 0.10, CAB_H),
+                 center=(car_x + cab_offset_x, car_y, GROUND + H_BODY + CAB_H/2),
+                 color=C["car_white"], name="carro_cab"))
+
+    # ---------- PARABRISAS (frente da cab inclinado - 1 box azul escuro) ----------
+    # Janelas laterais (escuras) - cob a lateral da cab
+    win_l = CAB_L - 0.20
+    win_h = CAB_H - 0.20
+    for sy in (-1, 1):
+        M.append(box((win_l, 0.02, win_h),
+                     center=(car_x + cab_offset_x,
+                             car_y + sy*(W/2 - 0.04 + 0.005),
+                             GROUND + H_BODY + CAB_H/2 + 0.05),
+                     color=C["car_window"], name=f"carro_janela_lat_{sy:+d}"))
+    # Parabrisas frontal/traseiro
+    front_x = car_x + cab_offset_x + CAB_L/2 - 0.01
+    rear_x = car_x + cab_offset_x - CAB_L/2 + 0.01
+    M.append(box((0.04, W - 0.20, win_h),
+                 center=(front_x, car_y, GROUND + H_BODY + CAB_H/2 + 0.05),
+                 color=C["car_window"], name="carro_parabrisas_frente"))
+    M.append(box((0.04, W - 0.20, win_h),
+                 center=(rear_x, car_y, GROUND + H_BODY + CAB_H/2 + 0.05),
+                 color=C["car_window"], name="carro_parabrisas_traseira"))
+
+    # ---------- LOGO SIMEPAR (textura) nas portas (2 lados) ----------
+    logo_l, logo_h = 1.40, 0.38
+    logo_x = car_x + cab_offset_x - 0.30  # sobre a porta dianteira
+    logo_z = GROUND + H_BODY*0.55         # meio do body
+    for sy in (-1, 1):
+        offset = sy * (W/2 + 0.005)  # ligeiramente fora da lateral
+        panel = _textured_panel_xz(
+            center=(logo_x, car_y + offset, logo_z),
+            width_x=logo_l, height_z=logo_h,
+            texture_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                       "assets", "simepar_logo.png"),
+            name=f"carro_logo_simepar_{sy:+d}"
+        )
+        if panel is not None:
+            M.append(panel)
+
+    # ---------- BUMPER frontal + traseiro (cinza escuro) ----------
+    M.append(box((0.15, W, BUMPER_H),
+                 center=(car_x + L/2 - 0.075, car_y, GROUND + BUMPER_H/2),
+                 color=C["bumper"], name="carro_bumper_frente"))
+    M.append(box((0.15, W, BUMPER_H),
+                 center=(car_x - L/2 + 0.075, car_y, GROUND + BUMPER_H/2),
+                 color=C["bumper"], name="carro_bumper_tras"))
+
+    # ---------- FAROIS frontais (amarelos) ----------
+    for sy in (-1, 1):
+        M.append(box((0.08, 0.30, 0.18),
+                     center=(car_x + L/2 - 0.05,
+                             car_y + sy*(W/2 - 0.30),
+                             GROUND + H_BODY*0.7),
+                     color=C["car_farol"], name=f"carro_farol_{sy:+d}"))
+
+    # ---------- RODAS (cilindro preto + rim cinza menor centrado) ----------
+    wheel_r = 0.39
+    wheel_thick = 0.22
+    wheel_inset_y = W/2 - wheel_thick/2 + 0.01
+    wheel_axle_x_front = L/2 - 0.90
+    wheel_axle_x_rear  = -L/2 + 0.90
+    for rx in (wheel_axle_x_front, wheel_axle_x_rear):
+        for sy in (-1, 1):
+            M.append(cyl(wheel_r, wheel_thick,
+                         center=(car_x + rx, car_y + sy*wheel_inset_y, wheel_r),
+                         axis=(0, 1, 0), sections=24,
+                         color=C["wheel_tire"], name=f"carro_pneu_{rx:.1f}_{sy:+d}"))
+            # Roda interna (rim) - prata, menor
+            M.append(cyl(wheel_r * 0.55, wheel_thick + 0.005,
+                         center=(car_x + rx, car_y + sy*wheel_inset_y, wheel_r),
+                         axis=(0, 1, 0), sections=20,
+                         color=C["wheel_rim"], name=f"carro_rim_{rx:.1f}_{sy:+d}"))
+
+    # ---------- SANTANTONIO (rack/barra superior da caçamba) ----------
+    bed_offset_x = L/2 - (L - CAB_L - 0.30)/2
+    # bars
+    for sx_offset in (-0.45, +0.45):
+        M.append(box((0.04, W - 0.20, 1.45 - (GROUND + H_BODY)),
+                     center=(car_x + bed_offset_x*0 + 0.35 + sx_offset,
+                             car_y, (GROUND + H_BODY + 1.45)/2 + 0.05),
+                     color=C["bumper"], name=f"carro_santantonio_{sx_offset}"))
+
     return M
 
 # =========================================================================
