@@ -26,14 +26,12 @@ os.makedirs(OUT_DIR, exist_ok=True)
 
 TARGET_POINTS = 58_000_000  # USAR TODOS os pontos do E57 (max densidade no crop)
 
-# Crop bbox - cobrir todo poly VERMELHO + radome existente + torre nova
-# Centro = meio caminho radome -> torre, mas com altura BALANCEADA p/ pegar tudo
-CROP_X_HALF = 65.0   # +-65m leste-oeste (130m total - bem largo)
-CROP_Z_HALF = 35.0   # +-35m norte-sul (70m total)
-# Centro do crop ajustado p/ pegar AMBOS (radome em z=-15, torre em z=+6)
-# meio z = (-15 + 6) / 2 = -4.5, mas user quer ver mais ao sul -> centrar em 0
-CROP_CENTER_OFFSET_X = 17.5
-CROP_CENTER_OFFSET_Z = +5.0  # ligeiramente ao sul do radome
+# Crop bbox - centrado no SITE SIMEPAR (radome + torre nova proxima)
+CROP_X_HALF = 45.0   # +-45m leste-oeste (90m total)
+CROP_Z_HALF = 30.0   # +-30m norte-sul (60m total)
+# Centro do crop: meio caminho radome -> torre (offset_east/2, offset_north/2)
+CROP_CENTER_OFFSET_X = 6.0   # entre radome e torre nova
+CROP_CENTER_OFFSET_Z = +4.0  # ligeiramente sul do radome
 # Densidade alvo apos crop (subsample apos crop se necessario)
 MAX_POINTS_AFTER_CROP = 6_500_000   # ~100 MB final
 
@@ -81,8 +79,8 @@ print("[3/6] Posicionando torre nova (offset manual conforme imagem 3 do usuario
 # Imagem 3 (Unreal render) mostra X marcado a ~12m SE do radome existente
 # (entre predio operacoes e radar existente, na area de grama aberta)
 # UTM convention: E (oeste->leste), N (sul->norte)
-OFFSET_EAST  = +35.0   # 35m a leste (poly verde sudeste no print v6)
-OFFSET_NORTH = -22.0   # 22m a sul
+OFFSET_EAST  = +12.0   # 12m a leste (X marcado proximo ao edif. SIMEPAR)
+OFFSET_NORTH = -8.0    # 8m a sul
 target_utm = radome_utm.copy()
 target_utm[0] += OFFSET_EAST
 target_utm[1] += OFFSET_NORTH
