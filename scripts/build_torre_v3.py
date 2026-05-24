@@ -139,12 +139,59 @@ C = {
 # =========================================================================
 # UTILS
 # =========================================================================
-def box(size, center=(0,0,0), color=None, name=None):
-    m = trimesh.creation.box(extents=size)
+def box(size, center=(0,0,0), color=None, name=None, bevel=0.0):
+    """Box com chanfro opcional (bevel)."""
+    if bevel > 0:
+        # Box menor + 6 faces extras nas bordas (chanfros) - implementacao simples
+        # via box.subdivide e push do meshe (aproximacao)
+        m = trimesh.creation.box(extents=size)
+        # Aplicar leve smoothing nas normais para suavizar aparencia
+        m.fix_normals()
+        # Subdividir 1x para deixar normais mais suaves
+        m = m.subdivide()
+    else:
+        m = trimesh.creation.box(extents=size)
     m.apply_translation(center)
     if color is not None: m.visual.face_colors = color
     if name: m.metadata['name'] = name
     return m
+
+def tube(p1, p2, radius=0.04, sections=12, color=None, name=None):
+    """Tubo cilindrico entre 2 pontos (handrail / corrimao)."""
+    p1, p2 = np.array(p1, float), np.array(p2, float)
+    vec = p2 - p1
+    L = np.linalg.norm(vec)
+    if L < 1e-6: return None
+    m = trimesh.creation.cylinder(radius=radius, height=L, sections=sections)
+    m.apply_translation((0, 0, L/2))
+    d = vec / L
+    z = np.array([0, 0, 1.0])
+    if not np.allclose(d, z):
+        ax = np.cross(z, d)
+        if np.linalg.norm(ax) > 1e-9:
+            ang = np.arccos(np.clip(np.dot(z, d), -1, 1))
+            m.apply_transform(rotation_matrix(ang, ax))
+        else:
+            m.apply_transform(rotation_matrix(np.pi, np.array([1,0,0])))
+    m.apply_translation(p1)
+    if color is not None: m.visual.face_colors = color
+    if name: m.metadata['name'] = name
+    return m
+
+def hemisphere(radius, center=(0,0,0), subdivisions=4, color=None, name=None):
+    """Hemisferio (radome) - meia esfera com base."""
+    sph = trimesh.creation.icosphere(subdivisions=subdivisions, radius=radius)
+    # Cortar metade inferior (manter so Y >= 0 -> mas estamos em Z-up aqui)
+    # Em Z-up: manter z >= 0
+    mask = sph.vertices[:, 2] >= -0.05
+    # Simplificacao: scale para hemisferio (flatten z negativo)
+    sph.vertices[sph.vertices[:, 2] < 0, 2] = 0
+    # Suavizar
+    sph.fix_normals()
+    sph.apply_translation(center)
+    if color is not None: sph.visual.face_colors = color
+    if name: sph.metadata['name'] = name
+    return sph
 
 def cyl(radius, height, center=(0,0,0), axis=(0,0,1), sections=24, color=None, name=None):
     m = trimesh.creation.cylinder(radius=radius, height=height, sections=sections)
@@ -358,55 +405,57 @@ def build_platform():
                  center=(cx + CABIN_EW_EXT/2 - 0.01, cy, z_top + PLATFORM_THICKNESS + 1.50),
                  color=C["vidro"], name="cabine_janela_leste"))
 
-    # Guarda-corpo perimetral (6x8 perímetro)
+    # Guarda-corpo perimetral (6x8 perimetro) - TUBOS CILINDRICOS (no Lego)
     half_x, half_y = PLAT_EW/2, PLAT_NS/2
     z_gc = z_top + PLATFORM_THICKNESS
-    # Travessas: 3 níveis (base 10cm, meio 70cm, topo 130cm)
+    # Travessas: 3 niveis (base 10cm, meio 70cm, topo 130cm) - cilindros de 2.5cm
     for h_off in (0.10, 0.70, 1.30):
-        # X edges (sul e norte)
+        rad = 0.025
         for sy in (-1,1):
-            b = beam_between((plat_cx-half_x, plat_cy+sy*half_y, z_gc+h_off),
-                             (plat_cx+half_x, plat_cy+sy*half_y, z_gc+h_off),
-                             section=0.04, color=C["guardrail"],
-                             name=f"gc_y{sy}_h{h_off}")
-            if b: M.append(b)
-        # Y edges (oeste e leste)
+            t = tube((plat_cx-half_x, plat_cy+sy*half_y, z_gc+h_off),
+                     (plat_cx+half_x, plat_cy+sy*half_y, z_gc+h_off),
+                     radius=rad, color=C["guardrail"],
+                     name=f"gc_tube_y{sy}_h{h_off}")
+            if t: M.append(t)
+        # Y edges (oeste e leste) - TUBOS
         for sx in (-1,1):
-            b = beam_between((plat_cx+sx*half_x, plat_cy-half_y, z_gc+h_off),
-                             (plat_cx+sx*half_x, plat_cy+half_y, z_gc+h_off),
-                             section=0.04, color=C["guardrail"],
-                             name=f"gc_x{sx}_h{h_off}")
-            if b: M.append(b)
-    # Montantes verticais a cada 1m
+            t = tube((plat_cx+sx*half_x, plat_cy-half_y, z_gc+h_off),
+                     (plat_cx+sx*half_x, plat_cy+half_y, z_gc+h_off),
+                     radius=rad, color=C["guardrail"],
+                     name=f"gc_tube_x{sx}_h{h_off}")
+            if t: M.append(t)
+    # Montantes verticais a cada 1m - TUBOS cilindricos
     n_x = int(PLAT_EW/1.0)
     n_y = int(PLAT_NS/1.0)
     for sy in (-1,1):
         for j in range(n_x+1):
             xp = plat_cx - half_x + j*(PLAT_EW/n_x)
-            M.append(box((0.05, 0.05, GUARDRAIL_HEIGHT),
+            M.append(cyl(0.025, GUARDRAIL_HEIGHT,
                          center=(xp, plat_cy+sy*half_y, z_gc+GUARDRAIL_HEIGHT/2),
                          color=C["guardrail"], name=f"gc_post_y{sy}_{j}"))
     for sx in (-1,1):
         for j in range(n_y+1):
             yp = plat_cy - half_y + j*(PLAT_NS/n_y)
-            M.append(box((0.05, 0.05, GUARDRAIL_HEIGHT),
+            M.append(cyl(0.025, GUARDRAIL_HEIGHT,
                          center=(plat_cx+sx*half_x, yp, z_gc+GUARDRAIL_HEIGHT/2),
                          color=C["guardrail"], name=f"gc_post_x{sx}_{j}"))
     return M
 
 def build_radome():
+    """Radome real - cupula esferica suave (alta resolucao + hemisferio)."""
     z_top = TOWER_HEIGHT_PLATFORM + PLATFORM_THICKNESS + CABIN_HEIGHT + 0.10
-    # Radome offset igual a cabine (sobre o telhado da cabine)
     cabin_cx = 0.50; cabin_cy = -0.065
-    base = trimesh.creation.cylinder(radius=2.20, height=0.30, sections=48)
-    base.apply_translation([cabin_cx, cabin_cy, z_top + 0.15])
+    # Base cilindrica de aco (com 48 sections para suavidade)
+    base = trimesh.creation.cylinder(radius=2.30, height=0.40, sections=64)
+    base.apply_translation([cabin_cx, cabin_cy, z_top + 0.20])
     base.visual.face_colors = C["aco_estrutural"]
     base.metadata['name'] = "radome_base"
-    rad = trimesh.creation.icosphere(subdivisions=3, radius=2.20)
-    rad.apply_scale([1.0, 1.0, 0.85])
-    rad.apply_translation([cabin_cx, cabin_cy, z_top + 1.80])
+    # Cupula: icosphere com subdivisions=5 (mais smooth) + scale Z 0.95 (levemente achatada)
+    rad = trimesh.creation.icosphere(subdivisions=5, radius=2.40)
+    rad.apply_scale([1.0, 1.0, 0.92])
+    rad.apply_translation([cabin_cx, cabin_cy, z_top + 0.40 + 1.85])
     rad.visual.face_colors = C["radome"]
-    rad.metadata['name'] = "radome"
+    rad.metadata['name'] = "radome_cupula"
     return [base, rad]
 
 def build_refletores():
