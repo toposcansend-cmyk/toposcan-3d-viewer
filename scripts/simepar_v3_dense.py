@@ -26,10 +26,14 @@ os.makedirs(OUT_DIR, exist_ok=True)
 
 TARGET_POINTS = 58_000_000  # USAR TODOS os pontos do E57 (max densidade no crop)
 
-# Crop bbox em torno do radome existente (centro do polígono verde do usuario)
-# Dimensoes em metros
-CROP_X_HALF = 35.0   # +-35m no eixo leste-oeste (70m total)
-CROP_Z_HALF = 30.0   # +-30m no eixo norte-sul (60m total)
+# Crop bbox - cobrir todo poly VERMELHO + radome existente + torre nova
+# Centro = meio caminho radome -> torre, mas com altura BALANCEADA p/ pegar tudo
+CROP_X_HALF = 65.0   # +-65m leste-oeste (130m total - bem largo)
+CROP_Z_HALF = 35.0   # +-35m norte-sul (70m total)
+# Centro do crop ajustado p/ pegar AMBOS (radome em z=-15, torre em z=+6)
+# meio z = (-15 + 6) / 2 = -4.5, mas user quer ver mais ao sul -> centrar em 0
+CROP_CENTER_OFFSET_X = 17.5
+CROP_CENTER_OFFSET_Z = +5.0  # ligeiramente ao sul do radome
 # Densidade alvo apos crop (subsample apos crop se necessario)
 MAX_POINTS_AFTER_CROP = 6_500_000   # ~100 MB final
 
@@ -77,8 +81,8 @@ print("[3/6] Posicionando torre nova (offset manual conforme imagem 3 do usuario
 # Imagem 3 (Unreal render) mostra X marcado a ~12m SE do radome existente
 # (entre predio operacoes e radar existente, na area de grama aberta)
 # UTM convention: E (oeste->leste), N (sul->norte)
-OFFSET_EAST  = +20.0   # 20m a leste do radome (poly verde marcado pelo user)
-OFFSET_NORTH = -8.0    # 8m a sul
+OFFSET_EAST  = +35.0   # 35m a leste (poly verde sudeste no print v6)
+OFFSET_NORTH = -22.0   # 22m a sul
 target_utm = radome_utm.copy()
 target_utm[0] += OFFSET_EAST
 target_utm[1] += OFFSET_NORTH
@@ -115,14 +119,15 @@ target_yup = np.array([target_utm[0] - cx, target_utm[2] - cz_base, -(target_utm
 print(f"      Torre Y-up: ({target_yup[0]:.2f}, {target_yup[1]:.2f}, {target_yup[2]:.2f})")
 
 # ============================================================================
-print(f"[5/6] CROP cloud ao retangulo {CROP_X_HALF*2:.0f}x{CROP_Z_HALF*2:.0f}m em torno do radome...")
-# Radome em coords Y-up
+print(f"[5/6] CROP cloud ao retangulo {CROP_X_HALF*2:.0f}x{CROP_Z_HALF*2:.0f}m (centrado no meio radome-torre)...")
+# Centro do crop = meio do caminho radome existente -> torre nova
 rad_x = radome_utm[0] - cx
 rad_z = -(radome_utm[1] - cy)
-# Mask de pontos dentro do crop
+crop_center_x = rad_x + CROP_CENTER_OFFSET_X
+crop_center_z = rad_z + CROP_CENTER_OFFSET_Z
 crop_mask = (
-    (pts_yup[:, 0] >= rad_x - CROP_X_HALF) & (pts_yup[:, 0] <= rad_x + CROP_X_HALF) &
-    (pts_yup[:, 2] >= rad_z - CROP_Z_HALF) & (pts_yup[:, 2] <= rad_z + CROP_Z_HALF)
+    (pts_yup[:, 0] >= crop_center_x - CROP_X_HALF) & (pts_yup[:, 0] <= crop_center_x + CROP_X_HALF) &
+    (pts_yup[:, 2] >= crop_center_z - CROP_Z_HALF) & (pts_yup[:, 2] <= crop_center_z + CROP_Z_HALF)
 )
 pts_cropped = pts_yup[crop_mask]
 r_c = r[crop_mask]; g_c = g[crop_mask]; b_c = b[crop_mask]
