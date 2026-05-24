@@ -1,0 +1,135 @@
+"""
+Converte PLY de mesh de igreja (com textura JPG) -> GLB comprimido para web.
+
+Pipeline:
+1. Carrega PLY com trimesh (preservando UV se houver)
+2. Aplica rotacao Z-up -> Y-up (GLTF 2.0 standard)
+3. Decima se muito pesado (faces > 500k)
+4. Exporta GLB (Draco se disponivel) com textura embed
+"""
+import os
+import sys
+import numpy as np
+import trimesh
+from trimesh.transformations import rotation_matrix
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODELS = os.path.join(ROOT, "models", "igrejas")
+os.makedirs(MODELS, exist_ok=True)
+
+# Conversao Z-up -> Y-up
+ROT_YUP = rotation_matrix(-np.pi/2, [1, 0, 0])
+
+def convert(ply_path, out_name, texture_path=None, max_faces=300_000):
+    print(f"\n{'='*70}\nProcessando: {ply_path}")
+    print(f"  Tamanho: {os.path.getsize(ply_path)/1024/1024:.1f} MB")
+
+    print("  Carregando PLY (isso pode demorar)...")
+    mesh = trimesh.load(ply_path, process=False)
+    print(f"  Vertices: {len(mesh.vertices):,}")
+    print(f"  Faces:    {len(mesh.faces):,}")
+
+    has_uv = hasattr(mesh.visual, 'uv') and mesh.visual.uv is not None
+    has_vcolor = hasattr(mesh.visual, 'vertex_colors') and mesh.visual.vertex_colors is not None
+    print(f"  UV (texture coords): {has_uv}")
+    print(f"  Vertex colors: {has_vcolor}")
+
+    # Centralizar (origem no centroide horizontal, base no Z=0)
+    centroid = mesh.vertices.mean(axis=0)
+    min_z = mesh.vertices[:, 2].min()
+    mesh.vertices[:, 0] -= centroid[0]
+    mesh.vertices[:, 1] -= centroid[1]
+    mesh.vertices[:, 2] -= min_z
+
+    # Rotaciona Z-up -> Y-up
+    mesh.apply_transform(ROT_YUP)
+    b = mesh.bounds
+    print(f"  Bounds (Y-up, centralizado): X={b[1][0]-b[0][0]:.1f}m Y={b[1][1]-b[0][1]:.1f}m Z={b[1][2]-b[0][2]:.1f}m")
+
+    # Decima usando fast_simplification direto
+    if len(mesh.faces) > max_faces:
+        target_reduction = 1.0 - (max_faces / len(mesh.faces))
+        print(f"  Decimando: {len(mesh.faces):,} -> ~{max_faces:,} faces (reduction {target_reduction:.3f})...")
+        try:
+            import fast_simplification
+            verts = np.asarray(mesh.vertices, dtype=np.float32)
+            faces = np.asarray(mesh.faces, dtype=np.uint32)
+            new_v, new_f = fast_simplification.simplify(verts, faces, target_reduction=target_reduction)
+            # Preservar cores de vertice por nearest-neighbor
+            preserve_colors = None
+            try:
+                if hasattr(mesh.visual, 'vertex_colors') and mesh.visual.vertex_colors is not None:
+                    from scipy.spatial import cKDTree
+                    tree = cKDTree(mesh.vertices)
+                    _, idx = tree.query(new_v, k=1)
+                    preserve_colors = mesh.visual.vertex_colors[idx]
+            except Exception as ce:
+                print(f"    aviso: nao consegui preservar cores: {ce}")
+            mesh = trimesh.Trimesh(vertices=new_v, faces=new_f, process=False)
+            if preserve_colors is not None:
+                mesh.visual.vertex_colors = preserve_colors
+            print(f"  Apos decimacao: {len(mesh.vertices):,} v / {len(mesh.faces):,} f")
+        except Exception as e:
+            print(f"  Decimacao falhou: {e}")
+            import traceback; traceback.print_exc()
+
+    # Anexar textura se foi passada
+    if texture_path and os.path.exists(texture_path) and has_uv:
+        from PIL import Image
+        try:
+            tex = Image.open(texture_path)
+            # Reduzir textura se muito grande (web)
+            max_tex = 2048
+            if tex.width > max_tex or tex.height > max_tex:
+                tex.thumbnail((max_tex, max_tex), Image.LANCZOS)
+                print(f"  Textura reduzida para {tex.size}")
+            mat = trimesh.visual.texture.SimpleMaterial(image=tex)
+            mesh.visual = trimesh.visual.TextureVisuals(uv=mesh.visual.uv, material=mat)
+            print(f"  Textura aplicada: {texture_path}")
+        except Exception as e:
+            print(f"  Erro aplicando textura: {e}")
+
+    # Exportar como GLB (trimesh decide se usa Draco)
+    out_glb = os.path.join(MODELS, out_name + ".glb")
+    print(f"  Exportando GLB...")
+    glb_bytes = mesh.export(file_type='glb')
+    with open(out_glb, 'wb') as f:
+        f.write(glb_bytes)
+    print(f"  OK gravado: {out_glb}")
+    print(f"  Tamanho final GLB: {os.path.getsize(out_glb)/1024/1024:.1f} MB")
+    return out_glb
+
+if __name__ == "__main__":
+    base = r"D:\Jonathan China Toposcan PG - Proposta 05202667\B_Aerolevantamento_3D"
+
+    igreja = sys.argv[1] if len(sys.argv) > 1 else "rosario"
+
+    igrejas = {
+        "rosario": {
+            "ply": os.path.join(base, "02_Igreja Nossa Senhora do Rosario", "03_Mesh_3D", "Rosario.ply"),
+            "tex": None,  # PLY tem cores nos vertices, sem JPG separado
+            "out": "igreja_rosario",
+        },
+        "saojose": {
+            "ply": os.path.join(base, "05_Igreja Sao Jose", "03_Mesh_3D", "Sao Jose mesh.ply"),
+            "tex": os.path.join(base, "05_Igreja Sao Jose", "03_Mesh_3D", "Sao Jose mesh.jpg"),
+            "out": "igreja_sao_jose",
+        },
+        "santarita": {
+            "ply": os.path.join(base, "06_Igreja Santa Rita", "03_Mesh_3D", "Santa_Rita_mesh.ply"),
+            "tex": os.path.join(base, "06_Igreja Santa Rita", "03_Mesh_3D", "Santa_Rita_mesh.jpg"),
+            "out": "igreja_santa_rita",
+        },
+        "saude": {
+            "ply": os.path.join(base, "07_Igreja Nossa Senhora da Saude", "03_Mesh_3D", "Senhora da Saude Mesh.ply"),
+            "tex": os.path.join(base, "07_Igreja Nossa Senhora da Saude", "03_Mesh_3D", "Senhora da Saude Mesh.jpg"),
+            "out": "igreja_saude",
+        },
+    }
+
+    if igreja not in igrejas:
+        print(f"Igrejas: {list(igrejas.keys())}")
+        sys.exit(1)
+
+    info = igrejas[igreja]
+    convert(info["ply"], info["out"], info.get("tex"))

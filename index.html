@@ -126,33 +126,114 @@
     margin: 0 10px;
   }
 
-  /* Scene toggle */
-  .scene-switch {
-    display: flex;
-    background: rgba(0,0,0,0.3);
+  /* Project selector (dropdown) */
+  .project-selector { position: relative; }
+  .project-trigger {
+    background: rgba(255,255,255,0.12);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.18);
+    padding: 9px 14px;
     border-radius: 8px;
-    padding: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: inherit;
+    transition: all var(--transition);
+    min-width: 220px;
     backdrop-filter: blur(8px);
   }
-  .scene-switch button {
-    background: transparent;
-    color: rgba(255,255,255,0.75);
-    border: none;
-    padding: 9px 16px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 11.5px;
-    font-weight: 600;
-    transition: all var(--transition);
+  .project-trigger:hover {
+    background: rgba(255,255,255,0.22);
+    border-color: rgba(255,255,255,0.32);
+  }
+  .project-trigger .project-icon { font-size: 16px; }
+  .project-trigger .project-name {
+    flex: 1;
+    text-align: left;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .project-trigger .project-chevron {
+    font-size: 11px;
+    opacity: 0.7;
+    transition: transform var(--transition);
+  }
+  .project-selector.open .project-trigger .project-chevron { transform: rotate(180deg); }
+
+  .project-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-2);
+    min-width: 320px;
+    max-width: 90vw;
+    padding: 6px;
+    display: none;
+    z-index: 100;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  .project-selector.open .project-menu { display: block; }
+  .project-group-label {
+    padding: 12px 14px 6px;
+    font-size: 10px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+  }
+  .project-group-label:first-child { padding-top: 8px; }
+  .project-item {
+    width: 100%;
+    background: transparent;
+    color: var(--text);
+    border: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     font-family: inherit;
+    transition: background var(--transition-fast);
+    text-align: left;
   }
-  .scene-switch button:hover { color: white; background: rgba(255,255,255,0.08); }
-  .scene-switch button.active {
-    background: white;
-    color: #1a3a52;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  .project-item:hover:not(:disabled) { background: rgba(74,163,224,0.1); }
+  .project-item.active { background: var(--accent); color: white; }
+  .project-item.disabled, .project-item:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
+  .project-item .icon { font-size: 22px; }
+  .project-item .info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+  .project-item .title {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .project-item .sub {
+    font-size: 10.5px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .project-item.active .sub { color: rgba(255,255,255,0.8); }
 
   .icon-btn {
     background: rgba(255,255,255,0.1);
@@ -787,11 +868,23 @@
     }
     .logo-wordmark { height: 24px; }
     .header-subtitle { display: none; }
-    .scene-switch { padding: 3px; }
-    .scene-switch button {
-      padding: 6px 12px;
-      font-size: 10.5px;
-      letter-spacing: 0.2px;
+
+    /* Project trigger compacto no mobile */
+    .project-trigger {
+      min-width: 0;
+      padding: 7px 10px;
+      font-size: 11px;
+      gap: 6px;
+    }
+    .project-trigger .project-icon { font-size: 14px; }
+    .project-trigger .project-name {
+      max-width: 130px;
+      font-size: 11px;
+    }
+    .project-menu {
+      min-width: min(340px, calc(100vw - 24px));
+      right: 0;
+      max-height: 60vh;
     }
 
     /* Main: viewer ocupa toda altura restante */
@@ -929,9 +1022,41 @@
   </div>
 
   <div class="header-right">
-    <div class="scene-switch">
-      <button id="btn-torre" class="active" onclick="loadScene('torre')">🗼 Torre</button>
-      <button id="btn-cena" onclick="loadScene('cena')">🌍 Com Terreno</button>
+    <div class="project-selector" id="project-selector">
+      <button class="project-trigger" onclick="toggleProjectMenu()">
+        <span class="project-icon" id="ps-icon">🗼</span>
+        <span class="project-name" id="ps-name">Torre Radar Banda C</span>
+        <span class="project-chevron">▾</span>
+      </button>
+      <div class="project-menu" id="project-menu">
+        <div class="project-group-label">Toposcan · Modelagem</div>
+        <button class="project-item active" data-scene="torre" onclick="loadScene('torre')">
+          <span class="icon">🗼</span>
+          <span class="info"><span class="title">Torre Radar Banda C</span><span class="sub">SIMEPAR · 401 peças</span></span>
+        </button>
+        <button class="project-item" data-scene="cena" onclick="loadScene('cena')">
+          <span class="icon">🌍</span>
+          <span class="info"><span class="title">Torre + Terreno (demo)</span><span class="sub">Com nuvem sintética</span></span>
+        </button>
+
+        <div class="project-group-label">Toposcan · Aerolevantamentos 3D</div>
+        <button class="project-item" data-scene="rosario" onclick="loadScene('rosario')">
+          <span class="icon">⛪</span>
+          <span class="info"><span class="title">Igreja Nossa Sra. do Rosário</span><span class="sub">Mesh aéreo · 300k faces · 5.7 MB</span></span>
+        </button>
+        <button class="project-item disabled" disabled>
+          <span class="icon">⛪</span>
+          <span class="info"><span class="title">Igreja São José</span><span class="sub">Em conversão...</span></span>
+        </button>
+        <button class="project-item disabled" disabled>
+          <span class="icon">⛪</span>
+          <span class="info"><span class="title">Igreja Santa Rita</span><span class="sub">Em conversão...</span></span>
+        </button>
+        <button class="project-item disabled" disabled>
+          <span class="icon">⛪</span>
+          <span class="info"><span class="title">Igreja N. Sra. da Saúde</span><span class="sub">Em conversão...</span></span>
+        </button>
+      </div>
     </div>
   </div>
 </header>
@@ -1164,12 +1289,12 @@
 
 <!-- ════════ MOBILE BOTTOM BAR ════════ -->
 <nav class="mobile-bottom-bar" id="mobile-bar">
+  <button onclick="toggleProjectMenu()"><span class="icon">📁</span><span>Projetos</span></button>
   <button onclick="toggleDrawer()" id="btn-drawer"><span class="icon">📊</span><span>Info</span></button>
   <button onclick="resetCamera()"><span class="icon">↺</span><span>Reset</span></button>
   <button onclick="toggleAutoRotate()" id="btn-rotate-m"><span class="icon">🔄</span><span>Girar</span></button>
   <button onclick="screenshot()"><span class="icon">📷</span><span>Foto</span></button>
   <button onclick="toggleTheme()"><span class="icon">🌓</span><span>Tema</span></button>
-  <button onclick="toggleFullscreen()"><span class="icon">⛶</span><span>Tela</span></button>
   <button onclick="showAbout()"><span class="icon">ℹ️</span><span>Sobre</span></button>
 </nav>
 
@@ -1241,10 +1366,22 @@
   let currentScene = 'torre';
 
   // Camera-orbit em Y-up: theta=rotacao Y, phi=0(topo)..90(lado)..180(baixo), radius=auto
-  // Modelo: Y=altura(0..30m), X=leste(-17..+9), Z=norte(-7..+7), centro em (-4, 12, 0)
   const scenes = {
-    torre: { src: "models/torre_radar_v3.glb",       orbit: "30deg 75deg auto", target: "0m 12m 0m" },
-    cena:  { src: "models/demo/cena_torre_terreno.glb", orbit: "30deg 75deg auto", target: "0m 12m 0m" },
+    torre: {
+      src: "models/torre_radar_v3.glb",
+      orbit: "30deg 75deg auto", target: "0m 12m 0m",
+      icon: "🗼", name: "Torre Radar Banda C",
+    },
+    cena: {
+      src: "models/demo/cena_torre_terreno.glb",
+      orbit: "30deg 75deg auto", target: "0m 12m 0m",
+      icon: "🌍", name: "Torre + Terreno",
+    },
+    rosario: {
+      src: "models/igrejas/igreja_rosario.glb",
+      orbit: "30deg 75deg auto", target: "auto auto auto",
+      icon: "⛪", name: "Igreja N. Sra. do Rosário",
+    },
   };
 
   const views = {
@@ -1327,6 +1464,7 @@
      ════════════════════════════════════════════════════════════ */
   function loadScene(key) {
     const s = scenes[key];
+    if (!s) return;
     currentScene = key;
     loader.classList.remove('hidden');
     loaderProgress.textContent = '0%';
@@ -1335,10 +1473,28 @@
       mv.cameraOrbit = s.orbit;
       mv.cameraTarget = s.target;
     }, 100);
-    document.getElementById('btn-torre').classList.toggle('active', key === 'torre');
-    document.getElementById('btn-cena').classList.toggle('active', key === 'cena');
-    showToast(key === 'torre' ? '🗼 Torre carregada' : '🌍 Cena completa carregada');
+    // Atualizar trigger do dropdown
+    const ic = document.getElementById('ps-icon');
+    const nm = document.getElementById('ps-name');
+    if (ic) ic.textContent = s.icon;
+    if (nm) nm.textContent = s.name;
+    // Atualizar active no menu
+    document.querySelectorAll('.project-item').forEach(b => {
+      b.classList.toggle('active', b.dataset.scene === key);
+    });
+    // Fechar menu
+    document.getElementById('project-selector')?.classList.remove('open');
+    showToast(`${s.icon} ${s.name} carregada`);
   }
+
+  function toggleProjectMenu() {
+    document.getElementById('project-selector').classList.toggle('open');
+  }
+  // Fecha menu ao clicar fora
+  document.addEventListener('click', (e) => {
+    const sel = document.getElementById('project-selector');
+    if (sel && !sel.contains(e.target)) sel.classList.remove('open');
+  });
 
   /* ════════════════════════════════════════════════════════════
      VIEWS
@@ -1467,7 +1623,12 @@
       case 'f': toggleFullscreen(); break;
       case 'p': screenshot(); break;
       case 't': toggleTheme(); break;
-      case 's': loadScene(currentScene === 'torre' ? 'cena' : 'torre'); break;
+      case 's': {
+        const keys = Object.keys(scenes);
+        const idx = keys.indexOf(currentScene);
+        loadScene(keys[(idx + 1) % keys.length]);
+        break;
+      }
       case 'h': showAbout(); break;
       case 'escape':
         document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
