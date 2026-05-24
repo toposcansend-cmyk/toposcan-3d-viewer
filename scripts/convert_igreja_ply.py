@@ -20,7 +20,7 @@ os.makedirs(MODELS, exist_ok=True)
 # Conversao Z-up -> Y-up
 ROT_YUP = rotation_matrix(-np.pi/2, [1, 0, 0])
 
-def convert(ply_path, out_name, texture_path=None, max_faces=300_000):
+def convert(ply_path, out_name, texture_path=None, max_faces=500_000):
     print(f"\n{'='*70}\nProcessando: {ply_path}")
     print(f"  Tamanho: {os.path.getsize(ply_path)/1024/1024:.1f} MB")
 
@@ -62,6 +62,33 @@ def convert(ply_path, out_name, texture_path=None, max_faces=300_000):
         except Exception as e:
             print(f"    aviso color capture: {e}")
     original_vertices = mesh.vertices.copy()
+
+    # **TRUQUE-CHAVE**: se tem textura + UV, samplar JPG e converter em VERTEX COLORS.
+    # Vertex colors sao MUITO mais robustas a decimacao do que UV mapping.
+    # (UV remap por NN distorce textura; vertex colors so misturam por NN sem distorcer)
+    if has_uv and texture_path and os.path.exists(texture_path):
+        from PIL import Image
+        print(f"  >> Samplando textura {os.path.basename(texture_path)} em vertex colors...")
+        try:
+            tex = Image.open(texture_path).convert('RGB')
+            tex_arr = np.asarray(tex)
+            tex_h, tex_w = tex_arr.shape[:2]
+            # UV em [0,1]: u=horizontal, v=vertical. PLY convention: v=0 no topo da textura
+            uvs = original_uvs
+            u_pix = np.clip((uvs[:, 0] * tex_w).astype(np.int32), 0, tex_w - 1)
+            v_pix = np.clip(((1.0 - uvs[:, 1]) * tex_h).astype(np.int32), 0, tex_h - 1)
+            rgb = tex_arr[v_pix, u_pix]
+            # Construir colors RGBA (alpha=255)
+            sampled_colors = np.column_stack([rgb, np.full(len(rgb), 255, dtype=np.uint8)])
+            original_colors = sampled_colors
+            mesh.visual = trimesh.visual.ColorVisuals(mesh=mesh, vertex_colors=sampled_colors)
+            print(f"     {len(rgb):,} vertices coloridos a partir da textura {tex.size}")
+            # Limpar referencia a UVs (nao usaremos mais)
+            original_uvs = None
+            has_uv = False
+        except Exception as e:
+            print(f"     ERRO samplando textura: {e}")
+            import traceback; traceback.print_exc()
 
     # Decima usando fast_simplification direto
     if len(mesh.faces) > max_faces:
