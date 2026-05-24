@@ -1042,19 +1042,19 @@
         <div class="project-group-label">Toposcan · Aerolevantamentos 3D</div>
         <button class="project-item" data-scene="rosario" onclick="loadScene('rosario')">
           <span class="icon">⛪</span>
-          <span class="info"><span class="title">Igreja Nossa Sra. do Rosário</span><span class="sub">Mesh aéreo · 300k faces · 5.7 MB</span></span>
+          <span class="info"><span class="title">Igreja N. Sra. do Rosário</span><span class="sub">Mesh aéreo HD · 14.5M faces · 279 MB</span></span>
         </button>
         <button class="project-item" data-scene="saojose" onclick="loadScene('saojose')">
           <span class="icon">⛪</span>
-          <span class="info"><span class="title">Igreja São José</span><span class="sub">Mesh aéreo · textura · 8 MB</span></span>
+          <span class="info"><span class="title">Igreja São José</span><span class="sub">Mesh aéreo HD · 12.8M faces · 252 MB</span></span>
         </button>
         <button class="project-item" data-scene="santarita" onclick="loadScene('santarita')">
           <span class="icon">⛪</span>
-          <span class="info"><span class="title">Igreja Santa Rita</span><span class="sub">Mesh aéreo · textura · 8 MB</span></span>
+          <span class="info"><span class="title">Igreja Santa Rita</span><span class="sub">Mesh aéreo HD · 8.5M faces · 170 MB</span></span>
         </button>
         <button class="project-item" data-scene="saude" onclick="loadScene('saude')">
           <span class="icon">⛪</span>
-          <span class="info"><span class="title">Igreja N. Sra. da Saúde</span><span class="sub">Mesh aéreo · textura · 8 MB</span></span>
+          <span class="info"><span class="title">Igreja N. Sra. da Saúde</span><span class="sub">Mesh aéreo HD · 12.5M faces · 246 MB</span></span>
         </button>
       </div>
     </div>
@@ -1378,24 +1378,28 @@
       icon: "🌍", name: "Torre + Terreno",
     },
     rosario: {
-      src: "models/igrejas/igreja_rosario.glb",
+      src: "https://github.com/toposcansend-cmyk/toposcan-3d-viewer/releases/download/hd-meshes-v1/igreja_rosario_hd.glb",
+      fallback: "models/igrejas/igreja_rosario.glb",
       orbit: "30deg 75deg auto", target: "auto auto auto",
-      icon: "⛪", name: "Igreja N. Sra. do Rosário",
+      icon: "⛪", name: "Igreja N. Sra. do Rosário", size: "279 MB HD",
     },
     santarita: {
-      src: "models/igrejas/igreja_santa_rita.glb",
+      src: "https://github.com/toposcansend-cmyk/toposcan-3d-viewer/releases/download/hd-meshes-v1/igreja_santa_rita_hd.glb",
+      fallback: "models/igrejas/igreja_santa_rita.glb",
       orbit: "30deg 75deg auto", target: "auto auto auto",
-      icon: "⛪", name: "Igreja Santa Rita",
+      icon: "⛪", name: "Igreja Santa Rita", size: "170 MB HD",
     },
     saojose: {
-      src: "models/igrejas/igreja_sao_jose.glb",
+      src: "https://github.com/toposcansend-cmyk/toposcan-3d-viewer/releases/download/hd-meshes-v1/igreja_sao_jose_hd.glb",
+      fallback: "models/igrejas/igreja_sao_jose.glb",
       orbit: "30deg 75deg auto", target: "auto auto auto",
-      icon: "⛪", name: "Igreja São José",
+      icon: "⛪", name: "Igreja São José", size: "252 MB HD",
     },
     saude: {
-      src: "models/igrejas/igreja_saude.glb",
+      src: "https://github.com/toposcansend-cmyk/toposcan-3d-viewer/releases/download/hd-meshes-v1/igreja_saude_hd.glb",
+      fallback: "models/igrejas/igreja_saude.glb",
       orbit: "30deg 75deg auto", target: "auto auto auto",
-      icon: "⛪", name: "Igreja N. Sra. da Saúde",
+      icon: "⛪", name: "Igreja N. Sra. da Saúde", size: "246 MB HD",
     },
   };
 

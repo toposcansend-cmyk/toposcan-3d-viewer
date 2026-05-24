@@ -20,7 +20,7 @@ os.makedirs(MODELS, exist_ok=True)
 # Conversao Z-up -> Y-up
 ROT_YUP = rotation_matrix(-np.pi/2, [1, 0, 0])
 
-def convert(ply_path, out_name, texture_path=None, max_faces=2_000_000):
+def convert(ply_path, out_name, texture_path=None, max_faces=2_000_000, no_decimate=False):
     print(f"\n{'='*70}\nProcessando: {ply_path}")
     print(f"  Tamanho: {os.path.getsize(ply_path)/1024/1024:.1f} MB")
 
@@ -91,7 +91,9 @@ def convert(ply_path, out_name, texture_path=None, max_faces=2_000_000):
             import traceback; traceback.print_exc()
 
     # Decima usando fast_simplification direto
-    if len(mesh.faces) > max_faces:
+    if no_decimate:
+        print(f"  >> Modo HD: SEM decimacao (mantendo {len(mesh.faces):,} faces)")
+    elif len(mesh.faces) > max_faces:
         target_reduction = 1.0 - (max_faces / len(mesh.faces))
         print(f"  Decimando: {len(mesh.faces):,} -> ~{max_faces:,} faces (reduction {target_reduction:.3f})...")
         try:
@@ -164,6 +166,8 @@ if __name__ == "__main__":
     base = r"D:\Jonathan China Toposcan PG - Proposta 05202667\B_Aerolevantamento_3D"
 
     igreja = sys.argv[1] if len(sys.argv) > 1 else "rosario"
+    no_decimate = "--hd" in sys.argv or "--no-decimate" in sys.argv
+    suffix = "_hd" if no_decimate else ""
 
     igrejas = {
         "rosario": {
@@ -193,4 +197,4 @@ if __name__ == "__main__":
         sys.exit(1)
 
     info = igrejas[igreja]
-    convert(info["ply"], info["out"], info.get("tex"))
+    convert(info["ply"], info["out"] + suffix, info.get("tex"), no_decimate=no_decimate)
