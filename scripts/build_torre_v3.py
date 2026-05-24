@@ -18,7 +18,7 @@ import numpy as np
 import trimesh
 from trimesh.transformations import rotation_matrix
 
-OUT_DIR = r"C:\Users\23GAMER\Downloads\torre_radar_extract\modelo_3d"
+OUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models")
 
 # =========================================================================
 # DIMENSOES EXATAS DO PDF
@@ -60,8 +60,9 @@ FOUNDATION_THICKNESS = 0.40
 PILE_DIAMETER    = 0.50
 PILE_DEPTH       = 1.50
 
-# Edif. terrea (CORRIGIDO V3)
-BUILDING_X       = -7.80         # centro do predio em X (oeste do tower)
+# Edif. terrea (CORRIGIDO V3) -- offset deve evitar overlap com fundacao 6x6m
+# Calculo: -(fundacao/2 + gap_1m + predio/2) = -(3 + 1 + 7) = -11.0
+BUILDING_X       = -11.00        # centro do predio em X (oeste do tower) - 1m de folga p/ fundacao
 BUILDING_EW      = 14.00         # 1400 cm = total fachada visto da fachada vista 1
 BUILDING_NS      = 6.00          # 5,70 interior + 0,15+0,15 paredes
 BUILDING_INT_NS  = 5.70

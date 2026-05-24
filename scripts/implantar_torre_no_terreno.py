@@ -32,8 +32,9 @@ os.environ["PYVISTA_OFF_SCREEN"] = "true"
 import pyvista as pv
 pv.OFF_SCREEN = True
 
-GLB_TORRE = r"C:\Users\23GAMER\Downloads\torre_radar_extract\modelo_3d\torre_radar_v3.glb"
-OUT_DIR = r"C:\Users\23GAMER\Downloads\torre_radar_extract\modelo_3d\implantacao"
+_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+GLB_TORRE = os.path.join(_REPO, "models", "torre_radar_v3.glb")
+OUT_DIR = os.path.join(_REPO, "models", "demo")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 
@@ -81,9 +82,10 @@ def make_demo_terrain(out_path):
         + 0.3 * np.cos(X/12.0 + Y/10.0)
         + np.random.normal(0, 0.05, X.shape)  # ruido p/ parecer ponto real
     )
-    pts = np.column_stack([X.ravel(), Y.ravel(), Z.ravel()])
-    # Cores baseadas em altura (verde p/ baixo, marrom p/ alto)
-    z_norm = (pts[:, 2] - pts[:, 2].min()) / (np.ptp(pts[:, 2]) + 1e-9)
+    # Y-up para GLTF: trocar Z (altura nativa) para Y, e Y nativo (planar) vai p/ -Z
+    pts = np.column_stack([X.ravel(), Z.ravel(), -Y.ravel()])  # x, height(y), -depth(z)
+    # Cores baseadas em altura (Y agora) - verde p/ baixo, marrom p/ alto
+    z_norm = (pts[:, 1] - pts[:, 1].min()) / (np.ptp(pts[:, 1]) + 1e-9)
     colors = np.column_stack([
         0.40 + 0.40*z_norm,    # R: aumenta com altura
         0.55 + 0.15*(1-z_norm), # G: fica verde no baixo
