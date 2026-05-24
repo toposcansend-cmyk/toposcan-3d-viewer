@@ -1044,17 +1044,17 @@
           <span class="icon">⛪</span>
           <span class="info"><span class="title">Igreja Nossa Sra. do Rosário</span><span class="sub">Mesh aéreo · 300k faces · 5.7 MB</span></span>
         </button>
-        <button class="project-item disabled" disabled>
+        <button class="project-item" data-scene="saojose" onclick="loadScene('saojose')">
           <span class="icon">⛪</span>
-          <span class="info"><span class="title">Igreja São José</span><span class="sub">Em conversão...</span></span>
+          <span class="info"><span class="title">Igreja São José</span><span class="sub">Mesh aéreo · textura · 8 MB</span></span>
         </button>
         <button class="project-item" data-scene="santarita" onclick="loadScene('santarita')">
           <span class="icon">⛪</span>
-          <span class="info"><span class="title">Igreja Santa Rita</span><span class="sub">Mesh aéreo · textura UV · 8 MB</span></span>
+          <span class="info"><span class="title">Igreja Santa Rita</span><span class="sub">Mesh aéreo · textura · 8 MB</span></span>
         </button>
-        <button class="project-item disabled" disabled>
+        <button class="project-item" data-scene="saude" onclick="loadScene('saude')">
           <span class="icon">⛪</span>
-          <span class="info"><span class="title">Igreja N. Sra. da Saúde</span><span class="sub">Em conversão...</span></span>
+          <span class="info"><span class="title">Igreja N. Sra. da Saúde</span><span class="sub">Mesh aéreo · textura · 8 MB</span></span>
         </button>
       </div>
     </div>
@@ -1386,6 +1386,16 @@
       src: "models/igrejas/igreja_santa_rita.glb",
       orbit: "30deg 75deg auto", target: "auto auto auto",
       icon: "⛪", name: "Igreja Santa Rita",
+    },
+    saojose: {
+      src: "models/igrejas/igreja_sao_jose.glb",
+      orbit: "30deg 75deg auto", target: "auto auto auto",
+      icon: "⛪", name: "Igreja São José",
+    },
+    saude: {
+      src: "models/igrejas/igreja_saude.glb",
+      orbit: "30deg 75deg auto", target: "auto auto auto",
+      icon: "⛪", name: "Igreja N. Sra. da Saúde",
     },
   };
 
