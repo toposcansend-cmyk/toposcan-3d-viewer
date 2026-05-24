@@ -1030,7 +1030,7 @@
       </button>
       <div class="project-menu" id="project-menu">
         <div class="project-group-label">Toposcan · Modelagem</div>
-        <button class="project-item active" data-scene="torre" onclick="loadScene('torre')">
+        <button class="project-item" data-scene="torre" onclick="loadScene('torre')">
           <span class="icon">🗼</span>
           <span class="info"><span class="title">Torre Radar Banda C</span><span class="sub">SIMEPAR · 401 peças</span></span>
         </button>
@@ -1040,7 +1040,7 @@
         </button>
 
         <div class="project-group-label">SIMEPAR · Levantamento Topográfico REAL</div>
-        <button class="project-item" data-scene="simepar_real" onclick="loadScene('simepar_real')">
+        <button class="project-item active" data-scene="simepar_real" onclick="loadScene('simepar_real')">
           <span class="icon">🛰️</span>
           <span class="info"><span class="title">Site SIMEPAR (real)</span><span class="sub">5M pontos reais · UTM 664479/7195351 · 76 MB</span></span>
         </button>
@@ -1124,7 +1124,7 @@
     </div>
 
     <model-viewer id="mv"
-      src="models/torre_radar_v3.glb"
+      src="models/simepar/simepar_site_v5_cropped.glb"
       alt="Torre Radar Banda C - SIMEPAR"
       shadow-intensity="2.0"
       shadow-softness="1.0"
@@ -1375,7 +1375,7 @@
   const toast = document.getElementById('toast');
 
   let autoRotate = false;
-  let currentScene = 'torre';
+  let currentScene = 'simepar_real';   // Cena padrao de entrada
 
   // Camera-orbit em Y-up: theta=rotacao Y, phi=0(topo)..90(lado)..180(baixo), radius=auto
   const scenes = {
@@ -1390,12 +1390,12 @@
       icon: "🌍", name: "Torre + Terreno (demo)",
     },
     simepar_real: {
-      src: "models/simepar/simepar_site_v4_complete.glb",
+      src: "models/simepar/simepar_site_v5_cropped.glb",
       orbit: "45deg 70deg 220m", target: "0m 50m 0m",
       icon: "🛰️", name: "Site SIMEPAR (real)",
     },
     simepar_cloud: {
-      src: "models/simepar/simepar_cloud_v4.glb",
+      src: "models/simepar/simepar_cloud_v5.glb",
       orbit: "45deg 70deg 220m", target: "0m 30m 0m",
       icon: "☁️", name: "Nuvem de pontos (sem torre)",
     },

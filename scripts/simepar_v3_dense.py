@@ -24,7 +24,14 @@ OUT_DIR = os.path.join(ROOT, "models", "simepar")
 TORRE_GLB = os.path.join(ROOT, "models", "torre_radar_v3.glb")
 os.makedirs(OUT_DIR, exist_ok=True)
 
-TARGET_POINTS = 6_000_000   # ~92 MB - cabe no GitHub (limite hard 100MB/arquivo)
+TARGET_POINTS = 58_000_000  # USAR TODOS os pontos do E57 (max densidade no crop)
+
+# Crop bbox em torno do radome existente (centro do polígono verde do usuario)
+# Dimensoes em metros
+CROP_X_HALF = 35.0   # +-35m no eixo leste-oeste (70m total)
+CROP_Z_HALF = 30.0   # +-30m no eixo norte-sul (60m total)
+# Densidade alvo apos crop (subsample apos crop se necessario)
+MAX_POINTS_AFTER_CROP = 6_500_000   # ~100 MB final
 
 # ============================================================================
 print(f"[1/6] E57 ({os.path.getsize(E57)/1024**3:.2f} GB)")
@@ -108,9 +115,33 @@ target_yup = np.array([target_utm[0] - cx, target_utm[2] - cz_base, -(target_utm
 print(f"      Torre Y-up: ({target_yup[0]:.2f}, {target_yup[1]:.2f}, {target_yup[2]:.2f})")
 
 # ============================================================================
-print("[5/6] Exportando point cloud denso...")
-colors_rgba = np.column_stack([r, g, b, np.full(len(r), 255, dtype=np.uint8)])
-cloud = trimesh.PointCloud(vertices=pts_yup, colors=colors_rgba)
+print(f"[5/6] CROP cloud ao retangulo {CROP_X_HALF*2:.0f}x{CROP_Z_HALF*2:.0f}m em torno do radome...")
+# Radome em coords Y-up
+rad_x = radome_utm[0] - cx
+rad_z = -(radome_utm[1] - cy)
+# Mask de pontos dentro do crop
+crop_mask = (
+    (pts_yup[:, 0] >= rad_x - CROP_X_HALF) & (pts_yup[:, 0] <= rad_x + CROP_X_HALF) &
+    (pts_yup[:, 2] >= rad_z - CROP_Z_HALF) & (pts_yup[:, 2] <= rad_z + CROP_Z_HALF)
+)
+pts_cropped = pts_yup[crop_mask]
+r_c = r[crop_mask]; g_c = g[crop_mask]; b_c = b[crop_mask]
+print(f"      {crop_mask.sum():,} pontos no crop (de {len(pts_yup):,} totais)")
+
+# Subsample APOS o crop se passar do limite
+if len(pts_cropped) > MAX_POINTS_AFTER_CROP:
+    idx2 = np.random.choice(len(pts_cropped), MAX_POINTS_AFTER_CROP, replace=False)
+    pts_cropped = pts_cropped[idx2]
+    r_c = r_c[idx2]; g_c = g_c[idx2]; b_c = b_c[idx2]
+    print(f"      Subsampling pos-crop: -> {len(pts_cropped):,} pontos")
+
+# Densidade resultante
+area_m2 = (CROP_X_HALF*2) * (CROP_Z_HALF*2)
+density = len(pts_cropped) / area_m2
+print(f"      Densidade final: {density:.0f} pts/m² ({len(pts_cropped):,} pts em {area_m2:.0f} m²)")
+
+colors_rgba = np.column_stack([r_c, g_c, b_c, np.full(len(r_c), 255, dtype=np.uint8)])
+cloud = trimesh.PointCloud(vertices=pts_cropped, colors=colors_rgba)
 cloud_out = os.path.join(OUT_DIR, "simepar_site.glb")
 cloud.export(cloud_out)
 print(f"      OK {cloud_out}  ({os.path.getsize(cloud_out)/1024**2:.1f} MB)")
