@@ -78,8 +78,8 @@ print("[3/6] Posicionando torre nova (offset manual conforme imagem 3 do usuario
 # Imagem 3 (Unreal render) mostra X marcado a ~12m SE do radome existente
 # (entre predio operacoes e radar existente, na area de grama aberta)
 # UTM convention: E (oeste->leste), N (sul->norte)
-OFFSET_EAST  = +12.0   # 12m a leste (X marcado proximo ao edif. SIMEPAR)
-OFFSET_NORTH = -8.0    # 8m a sul
+OFFSET_EAST  = +18.0   # +6m a leste do v8 (user marcou X mais sudeste)
+OFFSET_NORTH = -14.0   # +6m a sul do v8
 target_utm = radome_utm.copy()
 target_utm[0] += OFFSET_EAST
 target_utm[1] += OFFSET_NORTH
