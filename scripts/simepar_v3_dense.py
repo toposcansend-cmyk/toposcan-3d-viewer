@@ -70,8 +70,8 @@ print("[3/6] Posicionando torre nova (offset manual conforme imagem 3 do usuario
 # Imagem 3 (Unreal render) mostra X marcado a ~12m SE do radome existente
 # (entre predio operacoes e radar existente, na area de grama aberta)
 # UTM convention: E (oeste->leste), N (sul->norte)
-OFFSET_EAST  = +5.0    # 5m a leste
-OFFSET_NORTH = -12.0   # 12m a sul (negativo = sul)
+OFFSET_EAST  = +20.0   # 20m a leste do radome (poly verde marcado pelo user)
+OFFSET_NORTH = -8.0    # 8m a sul
 target_utm = radome_utm.copy()
 target_utm[0] += OFFSET_EAST
 target_utm[1] += OFFSET_NORTH
@@ -124,16 +124,14 @@ out_scene.add_geometry(cloud, geom_name="simepar_pointcloud", node_name="simepar
 
 # Torre: base no terreno. Y = target_yup[1] (altura) - 0.5 p/ evitar levitar
 offset = (target_yup[0], target_yup[1] - 0.5, target_yup[2])
-SUPPRESS = ['edif_', 'carro_', 'mureta', 'gradil', 'fossa', 'sumidouro']
-kept = 0; skipped = 0
+# Re-incluir TODOS componentes (user quer estrutura completa: torre + edif. terrea + carro + mureta + gradil + fossa)
+kept = 0
 for node, m in torre_scene.geometry.items():
-    if any(k in node for k in SUPPRESS):
-        skipped += 1
-        continue
     mc = m.copy()
     mc.apply_translation(offset)
     out_scene.add_geometry(mc, geom_name=node, node_name=node)
     kept += 1
+skipped = 0
 
 combo_out = os.path.join(OUT_DIR, "simepar_torre_real.glb")
 out_scene.export(combo_out)
